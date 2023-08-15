@@ -1,3 +1,3 @@
 
 # Delimcc
-A Monadic library for multi-prompt delimited control in F#. Delimcc is directly inspired by Oleg Kiselyov's work (https://okmij.org/ftp/continuations/implementations.html)
+A monadic library for multi-prompt delimited control in F#. Delimcc is directly based on the work of Oleg Kiselyov.(https://okmij.org/ftp/continuations/implementations.html)
