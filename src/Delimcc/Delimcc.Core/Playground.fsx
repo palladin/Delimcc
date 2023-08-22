@@ -2,7 +2,12 @@
 
 open Delimcc.Core.Delimcc
 
-let test = cc { return 42 } 
 
-run test
+let test0 = 
+    cc { 
+        let! x = cc { return 1 }
+        return x + 4 
+    } |> run |> expect 5
+
+
 
