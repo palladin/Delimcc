@@ -48,6 +48,16 @@ module Delimcc =
         | [] -> error "Empty PStack! Can't be happening"
         | h :: _ -> h
 
+    let isPromptSet : Prompt<'a> -> CC<bool> = fun p ->
+        let rec loop : PStack -> CC<bool> = fun stack ->
+            match stack with
+            | [] -> pure' false 
+            | (h :: t) -> if p.Mark = h.Mark then pure' true else loop t
+        cc {
+            let! stack = getPStack
+            return! loop stack
+        }
+
     let pushPFrame : PTop -> PFrame -> unit = fun ptop pframe -> 
         let stack = ptop.Value
         ptop.Value <- pframe :: stack
@@ -87,15 +97,23 @@ module Delimcc =
         p.Box.Value <- res
         h.EK ()
 
-    let isPromptSet : Prompt<'a> -> CC<bool> = fun p ->
-        let rec loop : PStack -> CC<bool> = fun stack ->
-            match stack with
-            | [] -> pure' false 
-            | (h :: t) -> if p.Mark = h.Mark then pure' true else loop t
-        cc {
-            let! stack = getPStack
-            return! loop stack
-        }
+    let unwind : list<PFrame> -> Mark -> PStack -> (PFrame * PStack * list<PFrame>) = fun acc mark stack -> 
+        let rec loop : list<PFrame> -> PStack -> (PFrame * PStack * list<PFrame>) = fun acc stack ->
+            match acc, stack with
+            | acc, [] -> error "No prompt was set" 
+            | acc, ((h :: t) as s) -> if mark = h.Mark then (h,s,acc) else loop (h :: acc) t
+        loop acc stack
+
+    let takeSubCont : Prompt<'b> -> (SubCont<'a, 'b> -> CC<'b>) -> CC<'a> = fun p f ->
+        newPrompt >>= fun pa -> fun k ptop ->
+            let ek = fun () -> popPrompt pa k ptop
+            let stack = ptop.Value
+            let (h, s, subcontchain) = unwind [] p.Mark ({ Mark = pa.Mark; EK = ek}  :: stack)
+            ptop.Value <- s
+            p.Box.Value <- f ({ PA = pa; PB = p; PS = subcontchain })
+            h.EK ()
+
+    
         
             
 

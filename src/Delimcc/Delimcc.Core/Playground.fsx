@@ -51,5 +51,16 @@ let test3' () =
         return 4 + x
     } |> run |> expect 9
 
+let test3'1 () = 
+    cc {
+        let! p = newPrompt
+        let! x = pushPrompt p <| cc { 
+            return! pushPrompt p <| cc { 
+                let! x = takeSubCont p (fun _ -> cc { return 5 })
+                return 6 + x
+            }
+        }
+        return 4 + x
+    } |> run |> expect 9
 
-[test0; test1; test2; test3; test3'] |> List.iter (fun f -> f ())
+[test0; test1; test2; test3; test3'; test3'1] |> List.iter (fun f -> f ())
