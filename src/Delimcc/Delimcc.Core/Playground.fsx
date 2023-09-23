@@ -9,8 +9,6 @@ let test0 () =
         return x + 4 
     } |> run |> expect 5
 
-
-
 let test1 () = 
     cc {
         let! p = newPrompt
@@ -24,6 +22,34 @@ let test1 () =
         }
     } |> run |> expect 1 
 
+let test2 () =
+    cc {
+        let! p = newPrompt
+        let! x = pushPrompt p (pushPrompt p <| cc { return 5 })
+        return 4 + x
+    } |> run |> expect 9
+
+let test3 () = 
+    cc {
+        let! p = newPrompt
+        let! x = pushPrompt p <| cc { 
+            let! x = abortP p <| cc { return 5 }
+            return 6 + x
+        }
+        return 4 + x
+    } |> run |> expect 9
+
+let test3' () = 
+    cc {
+        let! p = newPrompt
+        let! x = pushPrompt p <| cc { 
+            return! pushPrompt p <| cc { 
+                let! x = abortP p <| cc { return 5 }
+                return 6 + x
+            }
+        }
+        return 4 + x
+    } |> run |> expect 9
 
 
-[test0; test1] |> List.iter (fun f -> f ())
+[test0; test1; test2; test3; test3'] |> List.iter (fun f -> f ())

@@ -60,6 +60,7 @@ module Delimcc =
             h
 
     let popPrompt : Prompt<'a> -> CC<'a> = fun p k ptop ->
+        //printfn "ptop: %A" ptop.Value
         let _ = popPFrame ptop
         let cc = p.Box.Value
         cc k ptop
@@ -71,6 +72,20 @@ module Delimcc =
                 p.Box.Value <- pure' res
                 let pframe = getPFrame ptop
                 pframe.EK ()) ptop
+
+    let unwindAbort : Mark -> PStack -> (PFrame * PStack) = fun mark stack -> 
+        let rec loop : PStack -> (PFrame * PStack) = fun stack ->
+            match stack with
+            | [] -> error "No prompt was set" 
+            | (h :: t) as s -> if mark = h.Mark then (h, s) else loop t
+        loop stack
+
+    let abortP : Prompt<'a> -> CC<'a> -> CC<'b> = fun p res k ptop -> 
+        let stack = ptop.Value
+        let (h, s) = unwindAbort p.Mark stack
+        ptop.Value <- s
+        p.Box.Value <- res
+        h.EK ()
 
     let isPromptSet : Prompt<'a> -> CC<bool> = fun p ->
         let rec loop : PStack -> CC<bool> = fun stack ->
