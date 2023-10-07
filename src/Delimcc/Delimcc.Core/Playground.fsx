@@ -91,4 +91,36 @@ let test3''1 () =
         return x + 20
     } |> run |> expect 27
 
-[test0; test1; test2; test3; test3'; test3'1; test3''; test3''1] |> List.iter (fun f -> f ())
+let test4 () =
+    cc {
+        let! p = newPrompt
+        let! x = pushPrompt p <| cc {            
+            let! x = takeSubCont p <| fun sk -> cc { 
+                return! pushPrompt p <| cc { 
+                    return! pushSubCont sk <| cc { return 5 }                    
+                }
+            }
+            return x + 10
+        }
+        return x + 20
+    } |> run |> expect 35
+
+let test41 () =
+    cc {
+        let! p = newPrompt
+        let! x = pushPrompt p <| cc {            
+            let! x = takeSubCont p <| fun sk -> cc { 
+                return! pushSubCont sk <| cc { 
+                    return! pushPrompt p <| cc { 
+                        return! pushSubCont sk <| cc {
+                            return! abortP p <| cc { return 5 }
+                        }
+                    }
+                }
+            }
+            return x + 10
+        }
+        return x + 20
+    } |> run |> expect 35
+
+[test0; test1; test2; test3; test3'; test3'1; test3''; test3''1; test4; test41] |> List.iter (fun f -> f ())

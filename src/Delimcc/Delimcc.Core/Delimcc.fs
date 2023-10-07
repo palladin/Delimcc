@@ -39,9 +39,14 @@ module Delimcc =
         }
 
     let counter = ref 0
-    let newPrompt<'a> : CC<Prompt<'a>> = fun k ptop -> counter.Value <- counter.Value + 1; k <| { Mark = counter.Value; Box = ref Unchecked.defaultof<_>  }
+    let newMark () : Mark =
+        counter.Value <- counter.Value + 1
+        counter.Value
+
+    let newPrompt<'a> : CC<Prompt<'a>> = fun k ptop -> k <| { Mark = newMark (); Box = ref Unchecked.defaultof<_>  }
 
     let getPStack : CC<PStack> = fun k ptop -> k ptop.Value
+    let dumpPStack : string -> CC<unit> = fun text k ptop -> printfn "%s - PStack: %A" text ptop.Value; k ()
 
     let getPFrame : PTop -> PFrame = fun ptop ->
         match ptop.Value with
@@ -70,7 +75,7 @@ module Delimcc =
             h
 
     let popPrompt : Prompt<'a> -> CC<'a> = fun p k ptop ->
-        //printfn "ptop: %A" ptop.Value
+        //printfn "popPrompt: %A" ptop.Value
         let _ = popPFrame ptop
         let cc = p.Box.Value
         cc k ptop
@@ -113,6 +118,34 @@ module Delimcc =
             p.Box.Value <- f ({ PA = pa; PB = p; PS = subcontchain })
             h.EK ()
 
+    let rec revAppend : list<'a> -> list<'a> -> list<'a> = fun xs ys ->
+        match xs with
+        | [] -> ys
+        | x :: xs -> revAppend xs (x :: ys)    
+
+    let pushSubCont : SubCont<'a, 'b> -> CC<'a> -> CC<'b> = fun { PA = pa; PB = pb; PS = subcontchain } m k ptop ->
+        let ek = fun () -> popPrompt pb k ptop
+        let ephemeral = newMark ()
+        //printfn "ephemeral: %d" ephemeral
+        let stack = ptop.Value
+        let (h, stack') = 
+            match revAppend subcontchain ({ Mark = ephemeral; EK = ek } :: stack) with
+            | (h :: _) as stack' -> (h, stack')
+            | _ -> error "Invalid state"
+        ptop.Value <- stack'
+        pa.Box.Value <- m
+        h.EK ()
+
+    let pushDelimSubCont : SubCont<'a, 'b> -> CC<'a> -> CC<'b> = fun { PA = pa; PB = pb; PS = subcontchain } m k ptop ->
+        let ek = fun () -> popPrompt pb k ptop        
+        let stack = ptop.Value
+        let (h, stack') = 
+            match revAppend subcontchain ({ Mark = pb.Mark; EK = ek } :: stack) with
+            | (h :: _) as stack' -> (h, stack')
+            | _ -> error "Invalid state"
+        ptop.Value <- stack'
+        pa.Box.Value <- m
+        h.EK ()
     
         
             
