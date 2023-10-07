@@ -146,6 +146,19 @@ module Delimcc =
         ptop.Value <- stack'
         pa.Box.Value <- m
         h.EK ()
+
+    let shiftP : Prompt<'b> -> (('a -> CC<'b>) -> CC<'b>) -> CC<'a> = fun p f -> 
+        takeSubCont p <| fun sk -> 
+            pushPrompt p <| f (fun c -> pushDelimSubCont sk <| cc { return c })
+
+    let shift0P : Prompt<'b> -> (('a -> CC<'b>) -> CC<'b>) -> CC<'a> = fun p f -> 
+        takeSubCont p <| fun sk -> 
+            f (fun c -> pushDelimSubCont sk <| cc { return c })
+
+    let controlP : Prompt<'b> -> (('a -> CC<'b>) -> CC<'b>) -> CC<'a> = fun p f -> 
+        takeSubCont p <| fun sk -> 
+            pushPrompt p <| f (fun c -> pushSubCont sk <| cc { return c })
+
     
         
             

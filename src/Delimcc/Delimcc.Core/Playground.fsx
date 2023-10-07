@@ -123,4 +123,18 @@ let test41 () =
         return x + 20
     } |> run |> expect 35
 
-[test0; test1; test2; test3; test3'; test3'1; test3''; test3''1; test4; test41] |> List.iter (fun f -> f ())
+let test5 () = 
+    cc {
+        let! p = newPrompt
+        let! x = pushPrompt p <| cc {
+            let! x = shiftP p <| fun sk -> cc {
+                let! x = sk 3
+                let! x' = sk x
+                return x' + 100
+            }
+            return x + 2
+        }
+        return x + 10
+    } |> run |> expect 117
+
+[test0; test1; test2; test3; test3'; test3'1; test3''; test3''1; test4; test41; test5] |> List.iter (fun f -> f ())
