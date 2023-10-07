@@ -137,4 +137,42 @@ let test5 () =
         return x + 10
     } |> run |> expect 117
 
-[test0; test1; test2; test3; test3'; test3'1; test3''; test3''1; test4; test41; test5] |> List.iter (fun f -> f ())
+let testls () = 
+    cc {
+        let! p = newPrompt
+        return! pushPrompt p <| cc {
+            let! xv = shiftP p <| fun f -> cc { 
+                let! xv = f [] 
+                return "a" :: xv
+            }
+            return! shiftP p <| fun _ -> cc { return xv }
+        }
+    } |> run |> expect ["a"]
+
+
+let testlc () = 
+    cc {
+        let! p = newPrompt
+        return! pushPrompt p <| cc {
+            let! xv = controlP p <| fun f -> cc { 
+                let! xv = f [] 
+                return "a" :: xv
+            }
+            return! controlP p <| fun _ -> cc { return xv }
+        }
+    } |> run |> expect []
+
+let testlc' () = 
+    cc {
+        let! p = newPrompt
+        return! pushPrompt p <| cc {
+            let! xv = controlP p <| fun f -> cc { 
+                let! xv = f [] 
+                return "a" :: xv
+            }
+            return! controlP p <| fun g -> cc { return! g xv }
+        }
+    } |> run |> expect ["a"]
+
+[test0; test1; test2; test3; test3'; test3'1; test3''; test3''1; 
+ test4; test41; test5; testls; testlc; testlc'] |> List.iter (fun f -> f ())
