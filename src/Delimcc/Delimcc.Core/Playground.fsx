@@ -174,5 +174,29 @@ let testlc' () =
         }
     } |> run |> expect ["a"]
 
-[test0; test1; test2; test3; test3'; test3'1; test3''; test3''1; 
- test4; test41; test5; testls; testlc; testlc'] |> List.iter (fun f -> f ())
+// traversing puzzle by Olivier Danvy
+type DelimControl<'a, 'b> = Prompt<'b> -> (('a -> CC<'b>) -> CC<'b>) -> CC<'a>
+let traverse : DelimControl<list<'a>, list<'a>> -> list<'a> -> CC<list<'a>> = fun op xs -> 
+    let rec visit : Prompt<list<'a>> -> list<'a> -> CC<list<'a>> = fun p xs ->
+        match xs with
+        | [] -> cc { return [] }
+        | x :: xs -> cc {
+            let! v = op p <| fun f -> cc {
+                let! xs' = f xs
+                return x :: xs'
+            }
+            return! visit p v
+        }
+    cc {
+        let! p = newPrompt
+        return! pushPrompt p <| cc {
+            return! visit p xs
+        }
+    }
+
+let testTraverseShiftP () = traverse shiftP [1..5] |> run |> expect [1..5]
+let testTraverseControlP () = traverse controlP [1..5] |> run |> expect ([1..5] |> List.rev)
+
+
+[test0; test1; test2; test3; test3'; test3'1; test3''; test3''1; test4; 
+ test41; test5; testls; testlc; testlc'; testTraverseShiftP; testTraverseControlP] |> List.iter (fun f -> f ())

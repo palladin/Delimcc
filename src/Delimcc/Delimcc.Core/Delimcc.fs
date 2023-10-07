@@ -1,6 +1,8 @@
 ﻿namespace Delimcc.Core
 open System
 
+// Based on https://okmij.org/ftp/continuations/CCmonad/CCRef.hs
+
 module Delimcc =
     
     type CC<'a> = ('a -> unit) -> PTop -> unit
