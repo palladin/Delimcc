@@ -101,7 +101,7 @@ module Delimcc =
         let rec loop : list<PFrame> -> PStack -> (PFrame * PStack * list<PFrame>) = fun acc stack ->
             match acc, stack with
             | acc, [] -> error "No prompt was set" 
-            | acc, ((h :: t) as s) -> if mark = h.Mark then (h,s,acc) else loop (h :: acc) t
+            | acc, ((h :: t) as s) -> if mark = h.Mark then (h, s, acc) else loop (h :: acc) t
         loop acc stack
 
     let takeSubCont : Prompt<'b> -> (SubCont<'a, 'b> -> CC<'b>) -> CC<'a> = fun p f ->
